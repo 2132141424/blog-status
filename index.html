@@ -3,179 +3,245 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>水鱼博客 - 服务状态</title>
+<title>水鱼博客状态监控</title>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:100vh}
-.container{max-width:960px;margin:0 auto;padding:24px 16px}
-.header{text-align:center;padding:40px 24px 32px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:20px;color:#fff;margin-bottom:24px}
-.header h1{font-size:24px;font-weight:700;margin-bottom:4px}
-.header .sub{font-size:14px;opacity:.8;margin-bottom:16px}
-.overall{display:inline-flex;align-items:center;gap:10px;padding:10px 28px;border-radius:50px;font-size:15px;font-weight:600}
-.overall.ok{background:rgba(16,185,129,.18);border:1px solid rgba(16,185,129,.3)}
-.overall.problem{background:rgba(239,68,68,.18);border:1px solid rgba(239,68,68,.3)}
-.overall .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.overall.ok .dot{background:#10b981;box-shadow:0 0 8px #10b981}
-.overall.problem .dot{background:#ef4444;box-shadow:0 0 8px #ef4444}
-.card{background:#fff;border-radius:16px;padding:24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-.card-title{font-size:15px;font-weight:600;color:#374151;margin-bottom:16px;display:flex;align-items:center;gap:8px}
-.card-title .tag{font-size:11px;background:#e5e7eb;color:#6b7280;padding:2px 8px;border-radius:8px;font-weight:400}
-.iframe-wrap{width:100%;border-radius:10px;overflow:hidden;border:1px solid #e5e7eb}
-.iframe-wrap iframe{width:100%;border:none;display:block}
-.monitors{display:grid;gap:10px}
-.monitor{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:10px;border:1px solid #e5e7eb;transition:border-color .2s}
-.monitor:hover{border-color:#c7d2fe}
-.monitor .icon{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.monitor .icon.up{background:#10b981;box-shadow:0 0 6px rgba(16,185,129,.4)}
-.monitor .icon.down{background:#ef4444;box-shadow:0 0 6px rgba(239,68,68,.4)}
-.monitor .icon.paused{background:#f59e0b}
-.monitor .info{flex:1;min-width:0}
-.monitor .name{font-size:14px;font-weight:500;color:#1f2937;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.monitor .url{font-size:12px;color:#9ca3af;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.monitor .meta{text-align:right;flex-shrink:0}
-.monitor .rt{font-size:13px;font-weight:600;color:#374151}
-.monitor .uptime{font-size:11px;color:#9ca3af}
-.monitor .status-text{font-size:12px;font-weight:500;padding:2px 8px;border-radius:6px}
-.monitor .status-text.up{color:#065f46;background:#d1fae5}
-.monitor .status-text.down{color:#991b1b;background:#fee2e2}
-.monitor .status-text.paused{color:#92400e;background:#fef3c7}
-.empty{text-align:center;padding:24px;color:#9ca3af;font-size:14px}
-.loading{text-align:center;padding:24px;color:#9ca3af}
-.loading .spinner{display:inline-block;width:24px;height:24px;border:3px solid #e5e7eb;border-top-color:#667eea;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:8px}
+:root{
+  --bg:#0d1117;--panel:#161b22;--panel2:#1c2128;--border:#2d333b;
+  --text:#e6edf3;--muted:#8b949e;--ok:#3fb950;--down:#f85149;--warning:#d29922;
+  --accent:#58a6ff;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
+.container{max-width:860px;margin:0 auto;padding:24px 16px 40px}
+.header{display:flex;flex-direction:column;align-items:center;text-align:center;padding:32px 16px 20px}
+.header .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#58a6ff,#bc8cff);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:14px}
+.header h1{font-size:22px;font-weight:700}
+.header .sub{font-size:13px;color:var(--muted);margin-top:4px}
+.overall{display:inline-flex;align-items:center;gap:8px;margin-top:18px;padding:8px 20px;border-radius:30px;font-size:14px;font-weight:600;border:1px solid var(--border)}
+.overall.ok{color:var(--ok)}
+.overall.problem{color:var(--down)}
+.overall .dot{width:9px;height:9px;border-radius:50%}
+.overall.ok .dot{background:var(--ok);box-shadow:0 0 10px var(--ok)}
+.overall.problem .dot{background:var(--down);box-shadow:0 0 10px var(--down)}
+.meta-line{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);padding:10px 16px;margin-bottom:10px}
+.meta-line .count b{color:var(--text)}
+.group{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:20px 4px 10px}
+.monitor{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;transition:border-color .15s}
+.monitor:hover{border-color:#3d444d}
+.m-row{display:flex;align-items:center;gap:12px}
+.m-icon{width:36px;height:36px;border-radius:8px;background:var(--panel2);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.m-icon img{width:100%;height:100%;object-fit:cover}
+.m-icon .ph{font-size:18px}
+.m-main{flex:1;min-width:0}
+.m-name{font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
+.m-target{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.m-target a{color:var(--muted);text-decoration:none}
+.m-target a:hover{color:var(--accent)}
+.m-right{text-align:right;flex-shrink:0}
+.m-status{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px}
+.m-status.ok{color:var(--ok);background:rgba(63,185,80,.12)}
+.m-status.down{color:var(--down);background:rgba(248,81,73,.12)}
+.m-status.paused{color:var(--warning);background:rgba(210,153,34,.12)}
+.m-status .d{width:7px;height:7px;border-radius:50%}
+.m-status.ok .d{background:var(--ok)}
+.m-status.down .d{background:var(--down)}
+.m-status.paused .d{background:var(--warning)}
+.m-stats{display:flex;gap:24px;margin-top:14px;flex-wrap:wrap}
+.m-stat .sl{font-size:11px;color:var(--muted)}
+.m-stat .sv{font-size:14px;font-weight:600;color:var(--text);margin-top:2px}
+.m-stat .sv small{font-size:11px;font-weight:400;color:var(--muted)}
+.points{display:flex;gap:2px;margin-top:14px;align-items:flex-end;flex-wrap:nowrap;overflow:hidden}
+.pt{width:9px;height:9px;border-radius:2px;background:var(--border);flex-shrink:0;position:relative}
+.pt.up{background:var(--ok)}
+.pt.down{background:var(--down)}
+.pt.pending{background:var(--border)}
+.pt .tt{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#0d1117;border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-size:11px;white-space:nowrap;z-index:20;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.pt:hover .tt{display:block}
+.footer{text-align:center;padding:24px;color:var(--muted);font-size:12px}
+.footer a{color:var(--accent);text-decoration:none}
+.leaf{display:flex;gap:16px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.leaf span{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)}
+.leaf i{width:9px;height:9px;border-radius:2px;display:inline-block}
+.leaf i.up{background:var(--ok)}.leaf i.down{background:var(--down)}.leaf i.blank{background:var(--border)}
+.loading,.error-box{text-align:center;padding:40px 16px;color:var(--muted)}
+.error-box{color:var(--down)}
+.spinner{display:inline-block;width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.error-box{text-align:center;padding:24px;color:#ef4444;font-size:14px}
-.footer{text-align:center;padding:20px;color:#9ca3af;font-size:12px}
-.footer a{color:#667eea;text-decoration:none}
-.footer a:hover{text-decoration:underline}
-@media(max-width:640px){.container{padding:12px 8px}.header{padding:28px 16px 24px;border-radius:14px}.header h1{font-size:20px}.card{padding:16px}}
+.loading .tx{margin-top:12px;font-size:13px}
+@media(max-width:520px){.m-stats{gap:16px}.m-right{max-width:90px}.points{flex-wrap:wrap;gap:2px}}
 </style>
 </head>
 <body>
 <div class="container">
   <div class="header">
-    <h1>水鱼博客服务状态</h1>
-    <p class="sub">实时监控所有服务的可用性</p>
-    <div class="overall" id="overallBadge">
-      <span class="dot"></span>
-      <span id="overallText">检测中...</span>
-    </div>
+    <div class="logo">🐟</div>
+    <h1>水鱼博客状态监控</h1>
+    <div class="sub">实时监测所有服务的可用性</div>
+    <div class="overall" id="overall"><span class="dot"></span><span id="overallTx">加载中...</span></div>
   </div>
 
-  <div class="card" id="guguCard">
-    <div class="card-title">
-      🐟 咕咕监控
-      <span class="tag">多节点</span>
-    </div>
-    <div class="iframe-wrap">
-      <iframe src="https://dashboard.gugujiankong.com/status/23be993a478d407faf7f9785" height="380" title="咕咕监控状态"></iframe>
-    </div>
+  <div class="meta-line">
+    <span class="count">共 <b id="totalCount">0</b> 项服务</span>
+    <span id="updatedAt">--</span>
   </div>
 
-  <div class="card" id="uptimeCard">
-    <div class="card-title">
-      🌐 UptimeRobot 监控
-      <span class="tag">全球节点</span>
-    </div>
-    <div class="loading" id="uptimeLoading">
-      <div class="spinner"></div>
-      <div>正在获取数据...</div>
-    </div>
-    <div class="monitors" id="uptimeMonitors" style="display:none"></div>
-    <div class="error-box" id="uptimeError" style="display:none"></div>
+  <div id="list"></div>
+
+  <div class="leaf">
+    <span><i class="blank"></i> 无数据</span>
+    <span><i class="up"></i> 正常</span>
+    <span><i class="down"></i> 异常</span>
   </div>
 
   <div class="footer">
-    数据由 <a href="https://www.gugujiankong.com" target="_blank">咕咕监控</a> 和 <a href="https://uptimerobot.com" target="_blank">UptimeRobot</a> 提供 &middot; 每 5 分钟自动刷新
+    数据由咕咕监控与 UptimeRobot 提供 · 每 5 分钟自动刷新
   </div>
 </div>
 
 <script>
-const GUGU_URL = 'https://dashboard.gugujiankong.com/status/23be993a478d407faf7f9785'
+const PAGE_ID = '23be993a478d407faf7f9785'
 
-async function fetchUptimeRobot() {
-  const loading = document.getElementById('uptimeLoading')
-  const monitors = document.getElementById('uptimeMonitors')
-  const error = document.getElementById('uptimeError')
+// ---------- helpers ----------
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function fmtMs(ms){if(ms==null||isNaN(ms))return '--';return ms>=1000?(ms/1000).toFixed(2)+'s':Math.round(ms)+'ms'}
+function fmtPct(p){return p==null?'--':Number(p).toFixed(2)+'%'}
+function fmtDate(d){if(!d)return '--';const x=new Date(d);return x.toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'})}
+function daysLeft(validTo){if(!validTo)return null;const diff=new Date(validTo)-Date.now();return Math.max(0,Math.ceil(diff/86400000))}
 
-  try {
-    loading.style.display = 'block'
-    monitors.style.display = 'none'
-    error.style.display = 'none'
-
-    const res = await fetch('/api/uptime', { method: 'POST' })
-    if (!res.ok) throw new Error('请求失败: ' + res.status)
-
-    const data = await res.json()
-    if (data.stat !== 'ok') throw new Error(data.error?.message || 'API 错误')
-
-    loading.style.display = 'none'
-    monitors.style.display = 'grid'
-
-    if (!data.monitors || data.monitors.length === 0) {
-      monitors.innerHTML = '<div class="empty">暂无监控项</div>'
-      updateOverall(data.monitors || [])
-      return
+// normalize to {source, name, target, status:'ok|down|paused', avgRt, uptime, certDays, points:[{label,cls,text}], icon}
+function guguComponents(data){
+  const comps=(data&&data.Data&&data.Data.components)||[]
+  return comps.map(c=>{
+    const healthy=c.status==='HEALTHY'||c.monitorStatus==='HEALTHY'
+    let certDays=null
+    ;(c.nodes||[]).forEach(n=>{
+      try{const m=JSON.parse(n.message||'{}');if(m.sslCertificateValidTo)certDays=daysLeft(m.sslCertificateValidTo)}catch(e){}
+    })
+    const hist=c.history||[]
+    // ignore zero-data days (before monitoring started)
+    const real=hist.filter(h=>h.totalChecks>0)
+    const uptime=real.length? real.reduce((a,h)=>a+Number(h.uptimePercentage||0),0)/real.length : (c.uptimePercentage??null)
+    const avgRt=c.responseTime
+    const points=(hist||[]).map(h=>{
+      const has=h.totalChecks>0
+      const isUp=h.uptimePercentage>0
+      return {
+        label:h.date+' '+(has?(isUp?h.successCount+' 成功 / '+h.failureCount+' 失败':'全失败'):'无数据'),
+        cls:has?(isUp?'up':'down'):'pending'
+      }
+    })
+    return {
+      source:'咕咕监控',name:c.name||'未命名',target:c.target||'',
+      status:healthy?'ok':'down',avgRt,uptime,certDays,
+      points,icon:c.faviconUrl||'',type:c.type
     }
-
-    monitors.innerHTML = data.monitors.map(m => {
-      const up = m.status === 2
-      const paused = m.status === 0
-      const statusClass = paused ? 'paused' : (up ? 'up' : 'down')
-      const statusLabel = paused ? '已暂停' : (up ? '正常' : '异常')
-      const rt = m.response_times && m.response_times.length > 0
-        ? m.response_times[0].value + 'ms'
-        : '--'
-      const uptime = m.custom_uptime_ratio != null ? m.custom_uptime_ratio + '%' : '--'
-      const url = m.url ? m.url.replace(/^https?:\/\//, '') : ''
-
-      return '<div class="monitor">' +
-        '<span class="icon ' + statusClass + '"></span>' +
-        '<div class="info">' +
-          '<div class="name">' + m.friendly_name + '</div>' +
-          '<div class="url">' + url + '</div>' +
-        '</div>' +
-        '<div class="meta">' +
-          '<div class="rt">' + rt + '</div>' +
-          '<div class="uptime">' + uptime + '</div>' +
-          '<span class="status-text ' + statusClass + '">' + statusLabel + '</span>' +
-        '</div>' +
-      '</div>'
-    }).join('')
-
-    updateOverall(data.monitors)
-  } catch (e) {
-    loading.style.display = 'none'
-    error.style.display = 'block'
-    error.textContent = '无法获取 UptimeRobot 数据: ' + e.message
-    updateOverall([])
-  }
+  })
 }
 
-function updateOverall(monitors) {
-  const badge = document.getElementById('overallBadge')
-  const text = document.getElementById('overallText')
+function uptimeMonitors(data){
+  const list=(data&&data.monitors)||[]
+  return list.map(m=>{
+    const status=m.status===2?'ok':(m.status===0?'paused':'down')
+    const rt=(m.response_times&&m.response_times.length)?m.response_times[0].value:null
+    const uptime=m.custom_uptime_ratio!=null?m.custom_uptime_ratio:(m.all_time_uptime_ratio!=null?m.all_time_uptime_ratio:null)
+    // UptimeRobot v2 has no per-check uptime dots; build coarse dots from logs
+    const logs=(m.logs||[]).slice(0,30)
+    const points=logs.map(l=>({
+      label:(l.datetime?new Date(l.datetime*1000).toLocaleString('zh-CN'):'')+' · '+(l.type===2?'恢复正常':(l.type===1?'启动监控':'异常')),
+      cls:l.type===2?'up':'down'
+    })).reverse()
+    return {
+      source:'UptimeRobot',name:m.friendly_name||'',target:m.url||'',
+      status,avgRt:rt,uptime,certDays:null,points,icon:'',type:m.type
+    }
+  })
+}
 
-  const allUp = monitors.length > 0 && monitors.every(m => m.status === 2)
-  const anyDown = monitors.some(m => m.status !== 0 && m.status !== 2)
-
-  if (monitors.length === 0) {
-    badge.className = 'overall'
-    text.textContent = '检测中...'
+// ---------- render ----------
+async function load(){
+  const listEl=document.getElementById('list')
+  listEl.innerHTML='<div class="loading"><div class="spinner"></div><div class="tx">正在获取监控数据...</div></div>'
+  let results=[]
+  try{
+    const [g,r]=await Promise.all([
+      fetch('/api/gugu?range=90d').then(r=>r.json()).catch(()=>null),
+      fetch('/api/uptime',{method:'POST'}).then(r=>r.json()).catch(()=>null)
+    ])
+    results=[...guguComponents(g),...uptimeMonitors(r)]
+  }catch(e){
+    listEl.innerHTML='<div class="error-box">数据加载失败：'+esc(e.message||'unknown')+'</div>'
     return
   }
 
-  if (allUp) {
-    badge.className = 'overall ok'
-    text.textContent = '所有服务正常运行'
-  } else {
-    badge.className = 'overall problem'
-    text.textContent = anyDown ? '部分服务异常' : '存在已暂停服务'
+  if(!results.length){
+    listEl.innerHTML='<div class="error-box">未获取到任何监控数据</div>'
+    updateOverall([],0)
+    return
+  }
+
+  const okCount=results.filter(x=>x.status==='ok').length
+  updateOverall(results,okCount)
+  document.getElementById('totalCount').textContent=results.length
+  document.getElementById('updatedAt').textContent='更新于 '+new Date().toLocaleString('zh-CN',{hour12:false})
+
+  // group by source, keep a defined order
+  const order=['咕咕监控','UptimeRobot']
+  const groups={}
+  results.forEach(x=>{(groups[x.source]=groups[x.source]||[]).push(x)})
+  let html=''
+  order.forEach(src=>{
+    if(!groups[src]||!groups[src].length)return
+    html+='<div class="group">'+esc(src)+'</div>'
+    groups[src].forEach(m=>{ html+=row(m) })
+  })
+
+  listEl.innerHTML=html
+}
+
+function row(m){
+  const stCls=m.status
+  const stLabel={ok:'正常',down:'异常',paused:'已暂停'}[m.status]
+  const icon=m.icon
+    ?'<div class="m-icon"><img src="'+esc(m.icon)+'" onerror="this.style.display=\'none\'"></div>'
+    :'<div class="m-icon"><span class="ph">🌐</span></div>'
+  const cert=m.certDays!=null
+    ?'<div class="m-stat"><div class="sl">证书有效期</div><div class="sv">'+m.certDays+' 天 <small>提醒</small></div></div>'
+    :''
+  const pts=(m.points&&m.points.length)
+    ?'<div class="points">'+m.points.map(p=>'<span class="pt '+p.cls+'" title="'+esc(p.label)+'" style="--tip:&quot;'+esc(p.label)+'&quot;"><span class="tt">'+esc(p.label)+'</span></span>').join('')+'</div>'
+    :'<div class="points" style="opacity:.4">暂无历史数据</div>'
+  const targetHref=/^https?:\/\//.test(m.target||'')?m.target:'https://'+m.target
+  return '<div class="monitor">'+
+    '<div class="m-row">'+
+      icon+
+      '<div class="m-main">'+
+        '<div class="m-name">'+esc(m.name)+'</div>'+
+        (m.target?'<div class="m-target"><a href="'+esc(targetHref)+'" target="_blank" rel="noopener">'+esc(m.target.replace(/^https?:\/\//,''))+'</a></div>':'')+
+      '</div>'+
+      '<div class="m-right"><span class="m-status '+stCls+'"><span class="d"></span>'+stLabel+'</span></div>'+
+    '</div>'+
+    '<div class="m-stats">'+
+      '<div class="m-stat"><div class="sl">可用率</div><div class="sv">'+fmtPct(m.uptime)+'</div></div>'+
+      '<div class="m-stat"><div class="sl">平均响应时间</div><div class="sv">'+fmtMs(m.avgRt)+'</div></div>'+
+      cert+
+    '</div>'+
+    pts+
+  '</div>'
+}
+
+function updateOverall(list,okCount){
+  const el=document.getElementById('overall')
+  const tx=document.getElementById('overallTx')
+  if(!list.length){el.className='overall';tx.textContent='暂无数据';return}
+  if(okCount===list.length){
+    el.className='overall ok';tx.textContent='所有服务运行正常'
+  }else{
+    el.className='overall problem';tx.textContent='部分服务异常（'+okCount+'/'+list.length+'）'
   }
 }
 
-// Auto-refresh every 5 minutes
-fetchUptimeRobot()
-setInterval(fetchUptimeRobot, 5 * 60 * 1000)
+load()
+setInterval(load,5*60*1000)
 </script>
 </body>
 </html>

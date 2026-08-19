@@ -3,9 +3,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed' })
   }
 
-  const apiKey = process.env.UPTIMEROBOT_API_KEY
+  const apiKey = process.env.API_KEY
   if (!apiKey) {
-    return res.status(500).json({ error: 'UPTIMEROBOT_API_KEY not configured' })
+    return res.status(500).json({ error: 'UPTIMEROBOT_API_KEY/API_KEY not configured' })
   }
 
   try {
