@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>水鱼博客 - 服务状态</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:100vh}
+.container{max-width:960px;margin:0 auto;padding:24px 16px}
+.header{text-align:center;padding:40px 24px 32px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:20px;color:#fff;margin-bottom:24px}
+.header h1{font-size:24px;font-weight:700;margin-bottom:4px}
+.header .sub{font-size:14px;opacity:.8;margin-bottom:16px}
+.overall{display:inline-flex;align-items:center;gap:10px;padding:10px 28px;border-radius:50px;font-size:15px;font-weight:600}
+.overall.ok{background:rgba(16,185,129,.18);border:1px solid rgba(16,185,129,.3)}
+.overall.problem{background:rgba(239,68,68,.18);border:1px solid rgba(239,68,68,.3)}
+.overall .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.overall.ok .dot{background:#10b981;box-shadow:0 0 8px #10b981}
+.overall.problem .dot{background:#ef4444;box-shadow:0 0 8px #ef4444}
+.card{background:#fff;border-radius:16px;padding:24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.card-title{font-size:15px;font-weight:600;color:#374151;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.card-title .tag{font-size:11px;background:#e5e7eb;color:#6b7280;padding:2px 8px;border-radius:8px;font-weight:400}
+.iframe-wrap{width:100%;border-radius:10px;overflow:hidden;border:1px solid #e5e7eb}
+.iframe-wrap iframe{width:100%;border:none;display:block}
+.monitors{display:grid;gap:10px}
+.monitor{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:10px;border:1px solid #e5e7eb;transition:border-color .2s}
+.monitor:hover{border-color:#c7d2fe}
+.monitor .icon{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.monitor .icon.up{background:#10b981;box-shadow:0 0 6px rgba(16,185,129,.4)}
+.monitor .icon.down{background:#ef4444;box-shadow:0 0 6px rgba(239,68,68,.4)}
+.monitor .icon.paused{background:#f59e0b}
+.monitor .info{flex:1;min-width:0}
+.monitor .name{font-size:14px;font-weight:500;color:#1f2937;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.monitor .url{font-size:12px;color:#9ca3af;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.monitor .meta{text-align:right;flex-shrink:0}
+.monitor .rt{font-size:13px;font-weight:600;color:#374151}
+.monitor .uptime{font-size:11px;color:#9ca3af}
+.monitor .status-text{font-size:12px;font-weight:500;padding:2px 8px;border-radius:6px}
+.monitor .status-text.up{color:#065f46;background:#d1fae5}
+.monitor .status-text.down{color:#991b1b;background:#fee2e2}
+.monitor .status-text.paused{color:#92400e;background:#fef3c7}
+.empty{text-align:center;padding:24px;color:#9ca3af;font-size:14px}
+.loading{text-align:center;padding:24px;color:#9ca3af}
+.loading .spinner{display:inline-block;width:24px;height:24px;border:3px solid #e5e7eb;border-top-color:#667eea;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-box{text-align:center;padding:24px;color:#ef4444;font-size:14px}
+.footer{text-align:center;padding:20px;color:#9ca3af;font-size:12px}
+.footer a{color:#667eea;text-decoration:none}
+.footer a:hover{text-decoration:underline}
+@media(max-width:640px){.container{padding:12px 8px}.header{padding:28px 16px 24px;border-radius:14px}.header h1{font-size:20px}.card{padding:16px}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>水鱼博客服务状态</h1>
+    <p class="sub">实时监控所有服务的可用性</p>
+    <div class="overall" id="overallBadge">
+      <span class="dot"></span>
+      <span id="overallText">检测中...</span>
+    </div>
+  </div>
+
+  <div class="card" id="guguCard">
+    <div class="card-title">
+      🐟 咕咕监控
+      <span class="tag">多节点</span>
+    </div>
+    <div class="iframe-wrap">
+      <iframe src="https://dashboard.gugujiankong.com/status/23be993a478d407faf7f9785" height="380" title="咕咕监控状态"></iframe>
+    </div>
+  </div>
+
+  <div class="card" id="uptimeCard">
+    <div class="card-title">
+      🌐 UptimeRobot 监控
+      <span class="tag">全球节点</span>
+    </div>
+    <div class="loading" id="uptimeLoading">
+      <div class="spinner"></div>
+      <div>正在获取数据...</div>
+    </div>
+    <div class="monitors" id="uptimeMonitors" style="display:none"></div>
+    <div class="error-box" id="uptimeError" style="display:none"></div>
+  </div>
+
+  <div class="footer">
+    数据由 <a href="https://www.gugujiankong.com" target="_blank">咕咕监控</a> 和 <a href="https://uptimerobot.com" target="_blank">UptimeRobot</a> 提供 &middot; 每 5 分钟自动刷新
+  </div>
+</div>
+
+<script>
+const GUGU_URL = 'https://dashboard.gugujiankong.com/status/23be993a478d407faf7f9785'
+
+async function fetchUptimeRobot() {
+  const loading = document.getElementById('uptimeLoading')
+  const monitors = document.getElementById('uptimeMonitors')
+  const error = document.getElementById('uptimeError')
+
+  try {
+    loading.style.display = 'block'
+    monitors.style.display = 'none'
+    error.style.display = 'none'
+
+    const res = await fetch('/api/uptime', { method: 'POST' })
+    if (!res.ok) throw new Error('请求失败: ' + res.status)
+
+    const data = await res.json()
+    if (data.stat !== 'ok') throw new Error(data.error?.message || 'API 错误')
+
+    loading.style.display = 'none'
+    monitors.style.display = 'grid'
+
+    if (!data.monitors || data.monitors.length === 0) {
+      monitors.innerHTML = '<div class="empty">暂无监控项</div>'
+      updateOverall(data.monitors || [])
+      return
+    }
+
+    monitors.innerHTML = data.monitors.map(m => {
+      const up = m.status === 2
+      const paused = m.status === 0
+      const statusClass = paused ? 'paused' : (up ? 'up' : 'down')
+      const statusLabel = paused ? '已暂停' : (up ? '正常' : '异常')
+      const rt = m.response_times && m.response_times.length > 0
+        ? m.response_times[0].value + 'ms'
+        : '--'
+      const uptime = m.custom_uptime_ratio != null ? m.custom_uptime_ratio + '%' : '--'
+      const url = m.url ? m.url.replace(/^https?:\/\//, '') : ''
+
+      return '<div class="monitor">' +
+        '<span class="icon ' + statusClass + '"></span>' +
+        '<div class="info">' +
+          '<div class="name">' + m.friendly_name + '</div>' +
+          '<div class="url">' + url + '</div>' +
+        '</div>' +
+        '<div class="meta">' +
+          '<div class="rt">' + rt + '</div>' +
+          '<div class="uptime">' + uptime + '</div>' +
+          '<span class="status-text ' + statusClass + '">' + statusLabel + '</span>' +
+        '</div>' +
+      '</div>'
+    }).join('')
+
+    updateOverall(data.monitors)
+  } catch (e) {
+    loading.style.display = 'none'
+    error.style.display = 'block'
+    error.textContent = '无法获取 UptimeRobot 数据: ' + e.message
+    updateOverall([])
+  }
+}
+
+function updateOverall(monitors) {
+  const badge = document.getElementById('overallBadge')
+  const text = document.getElementById('overallText')
+
+  const allUp = monitors.length > 0 && monitors.every(m => m.status === 2)
+  const anyDown = monitors.some(m => m.status !== 0 && m.status !== 2)
+
+  if (monitors.length === 0) {
+    badge.className = 'overall'
+    text.textContent = '检测中...'
+    return
+  }
+
+  if (allUp) {
+    badge.className = 'overall ok'
+    text.textContent = '所有服务正常运行'
+  } else {
+    badge.className = 'overall problem'
+    text.textContent = anyDown ? '部分服务异常' : '存在已暂停服务'
+  }
+}
+
+// Auto-refresh every 5 minutes
+fetchUptimeRobot()
+setInterval(fetchUptimeRobot, 5 * 60 * 1000)
+</script>
+</body>
+</html>
