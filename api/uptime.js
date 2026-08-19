@@ -56,6 +56,19 @@ export default async function handler(req, res) {
     }
   }
 
+  // normalize custom_uptime_ranges to a numeric array (oldest first)
+  if (data && data.stat === 'ok' && Array.isArray(data.monitors)) {
+    data.monitors.forEach(m => {
+      const raw = m.custom_uptime_ranges
+      if (typeof raw === 'string') {
+        m.custom_uptime_ranges = raw.split('-')
+          .map(s => s.trim())
+          .filter(s => s !== '')
+          .map(Number)
+      }
+    })
+  }
+
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate')
   return res.status(200).json(data)
