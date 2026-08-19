@@ -124,8 +124,11 @@ function parseUptime(data){
   return list.map((m)=>{
     const status=m.status===2?'ok':(m.status===0?'paused':'down')
     const rt=(m.response_times&&m.response_times.length)?m.response_times[0].value:null
-    // UptimeRobot: prefer daily ranges; else all_time_uptime_ratio
-    const ranges=(m.custom_uptime_ranges||[]).map(v=>v!=null?v:null)
+    // UptimeRobot returns custom_uptime_ranges as a comma-separated string
+    const rawRanges=m.custom_uptime_ranges
+    let ranges=[]
+    if(Array.isArray(rawRanges)) ranges=rawRanges.slice()
+    else if(typeof rawRanges==='string'&&rawRanges) ranges=rawRanges.split(',')
     const real=ranges.filter(v=>v!=null).map(Number)
     let uptime=real.length? real.reduce((a,b)=>a+b,0)/real.length : null
     if(uptime==null && m.all_time_uptime_ratio!=null) uptime=Number(m.all_time_uptime_ratio)
