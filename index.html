@@ -8,7 +8,9 @@
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:#f5f7f9;color:#1a1a2e;min-height:100vh;line-height:1.6}
-.container{max-width:720px;margin:0 auto;padding:24px 16px 40px}
+.container{max-width:960px;margin:0 auto;padding:24px 16px 40px}
+#list{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media(max-width:640px){#list{grid-template-columns:1fr}}
 .header{text-align:center;padding:20px 0}
 .header .logo{width:56px;height:56px;border-radius:14px;overflow:hidden;margin:0 auto 12px;display:block}
 .header h1{font-size:20px;font-weight:700;color:#1a1a2e}
@@ -43,6 +45,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica N
 .upt-day{flex:1;min-width:4px;border-radius:2px;height:100%;position:relative;cursor:pointer;transition:transform .1s}
 .upt-day:hover{transform:scaleY(1.15);transform-origin:bottom}
 .upt-day.up{background:#4caf50}
+.upt-day.partial{background:#ffb300}
 .upt-day.down{background:#ef5350}
 .upt-day.nodata{background:#e0e0e0}
 .upt-day .tip{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:4px 8px;border-radius:6px;font-size:11px;white-space:nowrap;z-index:10;pointer-events:none}
@@ -118,18 +121,26 @@ function parseGugu(data){
 
 function parseUptime(data){
   const list=(data&&data.monitors)||[]
-  return list.map(m=>{
+  return list.map((m,i)=>{
     const status=m.status===2?'ok':(m.status===0?'paused':'down')
     const rt=(m.response_times&&m.response_times.length)?m.response_times[0].value:null
-    const uptime=m.custom_uptime_ratio!=null?m.custom_uptime_ratio:(m.all_time_uptime_ratio!=null?m.all_time_uptime_ratio:null)
-    const logs=(m.logs||[]).slice(0,30).reverse()
-    const points=logs.map(l=>({
-      date:l.datetime?new Date(l.datetime*1000).toISOString().slice(0,10):'',
-      tip:(l.datetime?new Date(l.datetime*1000).toLocaleString('zh-CN'):'')+' · '+(l.type===2?'恢复正常':(l.type===1?'启动':'异常')),
-      cls:l.type===2?'up':'down'
-    }))
+    // custom_uptime_ranges: array of daily ratio%, index 0 = oldest day
+    const ranges=(m.custom_uptime_ranges||[])
+    const real=ranges.map(v=>v!==null&&v!==undefined?Number(v):null).filter(v=>v!=null)
+    const uptime=real.length? real.reduce((a,b)=>a+b,0)/real.length : (m.all_time_uptime_ratio!=null?m.all_time_uptime_ratio:null)
+    const points=ranges.map((v,idx)=>{
+      const date=new Date(Date.now()-(ranges.length-1-idx)*86400000).toISOString().slice(0,10)
+      const ratio=v==null?null:Number(v)
+      let cls='nodata',tip=date+' 无数据'
+      if(ratio!=null){
+        if(ratio>=100){cls='up';tip=date+' 可用率 100%'}
+        else if(ratio>0){cls='partial';tip=date+' 可用率 '+ratio.toFixed(2)+'%'}
+        else{cls='down';tip=date+' 可用率 0%（全部失败）'}
+      }
+      return {date,tip,cls}
+    })
     return {
-      source:'UptimeRobot',name:m.friendly_name||'',target:m.url||'',
+      source:'UptimeRobot',name:m.friendly_name||('Uptime #'+m.id),target:m.url||'',
       status,avgRt:rt,uptime,certDays:null,points,icon:FAVICON
     }
   })
@@ -192,15 +203,7 @@ async function load(){
   document.getElementById('totalCount').textContent=results.length
   document.getElementById('updatedAt').textContent=new Date().toLocaleString('zh-CN',{hour12:false})
 
-  const groups={}
-  results.forEach(x=>{(groups[x.source]=groups[x.source]||[]).push(x)})
-  let html=''
-  ;['咕咕监控','UptimeRobot'].forEach(src=>{
-    if(!groups[src]||!groups[src].length)return
-    html+='<div class="group-title">'+esc(src)+'</div>'
-    html+=groups[src].map(renderMonitor).join('')
-  })
-  listEl.innerHTML=html
+  listEl.innerHTML=results.map(renderMonitor).join('')
 }
 
 load()

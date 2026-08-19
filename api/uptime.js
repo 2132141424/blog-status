@@ -1,3 +1,10 @@
+function buildDailyRanges(days) {
+  // "i-i" = 最近 i 天到最近 i-1 天，i=1 为今天；返回从旧到新供前端顺序展示
+  const ranges = []
+  for (let i = days; i >= 1; i--) ranges.push(`${i}-${i}`)
+  return ranges
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' })
@@ -5,20 +12,24 @@ export default async function handler(req, res) {
 
   const apiKey = process.env.API_KEY
   if (!apiKey) {
-    return res.status(500).json({ error: 'UPTIMEROBOT_API_KEY/API_KEY not configured' })
+    return res.status(500).json({ error: 'API_KEY not configured' })
   }
 
+  const days = Math.min(90, Math.max(1, parseInt(req.query?.days || '30', 10)))
+
   try {
+    const body = new URLSearchParams({
+      api_key: apiKey,
+      format: 'json',
+      response_times: '1',
+      response_times_limit: '30',
+      custom_uptime_ranges: buildDailyRanges(days).join(','),
+    })
+
     const response = await fetch('https://api.uptimerobot.com/v2/getMonitors', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        api_key: apiKey,
-        format: 'json',
-        logs: '1',
-        response_times: '1',
-        response_times_limit: '30',
-      }),
+      body,
     })
 
     const data = await response.json()
