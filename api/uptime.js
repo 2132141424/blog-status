@@ -1,6 +1,14 @@
+// UptimeRobot V2 custom_uptime_ranges expects unix (s) timestamp pairs: start_end,
+// multiple ranges joined by '-', e.g. 1465440758_1466304758-1434682358_1434855158
 function buildDailyRanges(days) {
+  const now = Math.floor(Date.now() / 1000)
+  const day = 86400
   const ranges = []
-  for (let i = days; i >= 1; i--) ranges.push(`${i}-${i}`)
+  for (let i = days; i >= 1; i--) {
+    const start = now - i * day
+    const end = now - (i - 1) * day + 1
+    ranges.push(`${start}_${end}`)
+  }
   return ranges
 }
 
@@ -23,25 +31,22 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'API_KEY not configured' })
   }
 
-  const days = Math.min(7, Math.max(1, parseInt(req.query?.days || '7', 10)))
+  const days = Math.min(30, Math.max(1, parseInt(req.query?.days || '30', 10)))
   const base = {
     api_key: apiKey,
     format: 'json',
     response_times: '1',
     response_times_limit: '30',
-    logs: '1',
   }
 
   let data = null
-  // try daily ranges first; UptimeRobot may reject too many — fall back to plain
   try {
     data = await callUptime(new URLSearchParams({
       ...base,
-      custom_uptime_ranges: buildDailyRanges(days).join(','),
+      custom_uptime_ranges: buildDailyRanges(days).join('-'),
     }))
     if (data.stat !== 'ok') {
-      const plain = await callUptime(new URLSearchParams(base))
-      data = plain
+      data = await callUptime(new URLSearchParams(base))
     }
   } catch (err) {
     try {
