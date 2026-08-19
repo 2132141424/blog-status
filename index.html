@@ -121,24 +121,35 @@ function parseGugu(data){
 
 function parseUptime(data){
   const list=(data&&data.monitors)||[]
-  return list.map((m,i)=>{
+  return list.map((m)=>{
     const status=m.status===2?'ok':(m.status===0?'paused':'down')
     const rt=(m.response_times&&m.response_times.length)?m.response_times[0].value:null
-    // custom_uptime_ranges: array of daily ratio%, index 0 = oldest day
-    const ranges=(m.custom_uptime_ranges||[])
-    const real=ranges.map(v=>v!==null&&v!==undefined?Number(v):null).filter(v=>v!=null)
-    const uptime=real.length? real.reduce((a,b)=>a+b,0)/real.length : (m.all_time_uptime_ratio!=null?m.all_time_uptime_ratio:null)
-    const points=ranges.map((v,idx)=>{
-      const date=new Date(Date.now()-(ranges.length-1-idx)*86400000).toISOString().slice(0,10)
-      const ratio=v==null?null:Number(v)
-      let cls='nodata',tip=date+' 无数据'
-      if(ratio!=null){
-        if(ratio>=100){cls='up';tip=date+' 可用率 100%'}
-        else if(ratio>0){cls='partial';tip=date+' 可用率 '+ratio.toFixed(2)+'%'}
-        else{cls='down';tip=date+' 可用率 0%（全部失败）'}
-      }
-      return {date,tip,cls}
-    })
+    // UptimeRobot: prefer daily ranges; else all_time_uptime_ratio
+    const ranges=(m.custom_uptime_ranges||[]).map(v=>v!=null?v:null)
+    const real=ranges.filter(v=>v!=null).map(Number)
+    let uptime=real.length? real.reduce((a,b)=>a+b,0)/real.length : null
+    if(uptime==null && m.all_time_uptime_ratio!=null) uptime=Number(m.all_time_uptime_ratio)
+    let points
+    if(real.length){
+      points=ranges.map((v,idx)=>{
+        const date=new Date(Date.now()-(ranges.length-1-idx)*86400000).toISOString().slice(0,10)
+        const ratio=v==null?null:Number(v)
+        let cls='nodata',tip=date+' 无数据'
+        if(ratio!=null){
+          if(ratio>=100){cls='up';tip=date+' 可用率 100%'}
+          else if(ratio>0){cls='partial';tip=date+' 可用率 '+ratio.toFixed(2)+'%'}
+          else{cls='down';tip=date+' 可用率 0%（全部失败）'}
+        }
+        return {date,tip,cls}
+      })
+    } else {
+      // fallback: derive dots from status-change logs (no per-day data available)
+      points=(m.logs||[]).slice(0,60).map(l=>({
+        date:l.datetime?new Date(l.datetime*1000).toISOString().slice(0,10):'',
+        tip:(l.datetime?new Date(l.datetime*1000).toLocaleString('zh-CN'):'')+' · '+(l.type===2?'恢复正常':(l.type===1?'启动监控':'异常')),
+        cls:l.type===2?'up':'down'
+      }))
+    }
     return {
       source:'UptimeRobot',name:m.friendly_name||('Uptime #'+m.id),target:m.url||'',
       status,avgRt:rt,uptime,certDays:null,points,icon:FAVICON
