@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+
+Disallow: /anotherindex/old
+
+Sitemap: https://waterfish.ren/sitemap_index.xml
